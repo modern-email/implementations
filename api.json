@@ -1,0 +1,521 @@
+{
+	"Name": "API",
+	"Docs": "",
+	"Functions": [
+		{
+			"Name": "ImplementationSet",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "impl",
+					"Typewords": [
+						"Implementation"
+					]
+				}
+			],
+			"Returns": [
+				{
+					"Name": "rimpl",
+					"Typewords": [
+						"Implementation"
+					]
+				}
+			]
+		},
+		{
+			"Name": "ImplementationRemove",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "id",
+					"Typewords": [
+						"int64"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "SoftwareCreate",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "s",
+					"Typewords": [
+						"Software"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "SoftwareUpdate",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "s",
+					"Typewords": [
+						"Software"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "SoftwareRemove",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "id",
+					"Typewords": [
+						"string"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "FeatureCreate",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "f",
+					"Typewords": [
+						"Feature"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "FeatureUpdate",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "f",
+					"Typewords": [
+						"Feature"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "FeatureRemove",
+			"Docs": "",
+			"Params": [
+				{
+					"Name": "id",
+					"Typewords": [
+						"string"
+					]
+				}
+			],
+			"Returns": []
+		},
+		{
+			"Name": "State",
+			"Docs": "",
+			"Params": [],
+			"Returns": [
+				{
+					"Name": "r0",
+					"Typewords": [
+						"State"
+					]
+				}
+			]
+		}
+	],
+	"Sections": [],
+	"Structs": [
+		{
+			"Name": "Implementation",
+			"Docs": "Implementation status of a feature by an implementation.",
+			"Fields": [
+				{
+					"Name": "ID",
+					"Docs": "",
+					"Typewords": [
+						"int64"
+					]
+				},
+				{
+					"Name": "Updated",
+					"Docs": "",
+					"Typewords": [
+						"timestamp"
+					]
+				},
+				{
+					"Name": "SoftwareID",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "FeatureID",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Status",
+					"Docs": "",
+					"Typewords": [
+						"Status"
+					]
+				},
+				{
+					"Name": "Bugs",
+					"Docs": "Has known bugs",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Plugin",
+					"Docs": "If functionality is delivered by plugin.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "URL",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "SinceVersion",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Notes",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"Name": "Software",
+			"Docs": "",
+			"Fields": [
+				{
+					"Name": "ID",
+					"Docs": "e.g. \"mox\" or \"someSoftware\", keep them valid identifiers for working in js easily.",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Created",
+					"Docs": "",
+					"Typewords": [
+						"timestamp"
+					]
+				},
+				{
+					"Name": "Updated",
+					"Docs": "",
+					"Typewords": [
+						"timestamp"
+					]
+				},
+				{
+					"Name": "Name",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "URL",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Description",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "OpenSource",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "License",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "ProgLang",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Distribution",
+					"Docs": "Collection of other software packages.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Server",
+					"Docs": "Corresponds to same fields in Feature.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Service",
+					"Docs": "Hosted service, software not necessarily available.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Library",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Client",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Desktop",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Mobile",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Web",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Terminal",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				}
+			]
+		},
+		{
+			"Name": "Feature",
+			"Docs": "Feature is something software implements. Like a standard (RFC), a small part of\na standard, or just some behaviour the software has.",
+			"Fields": [
+				{
+					"Name": "ID",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Created",
+					"Docs": "",
+					"Typewords": [
+						"timestamp"
+					]
+				},
+				{
+					"Name": "Updated",
+					"Docs": "",
+					"Typewords": [
+						"timestamp"
+					]
+				},
+				{
+					"Name": "Title",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "URL",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Description",
+					"Docs": "",
+					"Typewords": [
+						"string"
+					]
+				},
+				{
+					"Name": "Server",
+					"Docs": "Corresponds to same fields in Software, whether they are applicable.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Service",
+					"Docs": "Hosted service, software not necessarily available.",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Library",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Client",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Desktop",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Mobile",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Web",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
+					"Name": "Terminal",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				}
+			]
+		},
+		{
+			"Name": "State",
+			"Docs": "State is available in JS.",
+			"Fields": [
+				{
+					"Name": "Software",
+					"Docs": "",
+					"Typewords": [
+						"[]",
+						"Software"
+					]
+				},
+				{
+					"Name": "Features",
+					"Docs": "",
+					"Typewords": [
+						"[]",
+						"Feature"
+					]
+				},
+				{
+					"Name": "Implementations",
+					"Docs": "",
+					"Typewords": [
+						"[]",
+						"Implementation"
+					]
+				}
+			]
+		}
+	],
+	"Ints": [],
+	"Strings": [
+		{
+			"Name": "Status",
+			"Docs": "Implementation status of a feature for software.",
+			"Values": [
+				{
+					"Name": "Unknown",
+					"Value": "",
+					"Docs": ""
+				},
+				{
+					"Name": "NotApplicable",
+					"Value": "n/a",
+					"Docs": ""
+				},
+				{
+					"Name": "Never",
+					"Value": "Never",
+					"Docs": ""
+				},
+				{
+					"Name": "No",
+					"Value": "No",
+					"Docs": ""
+				},
+				{
+					"Name": "Planned",
+					"Value": "Planned",
+					"Docs": ""
+				},
+				{
+					"Name": "Partial",
+					"Value": "Partial",
+					"Docs": ""
+				},
+				{
+					"Name": "Yes",
+					"Value": "Yes",
+					"Docs": ""
+				}
+			]
+		}
+	],
+	"SherpaVersion": 0,
+	"SherpadocVersion": 1
+}
