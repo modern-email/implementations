@@ -1,4 +1,4 @@
-module github.com/mjl-/implementations
+module github.com/modern-email/implementations
 
 go 1.22.0
 
