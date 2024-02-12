@@ -146,7 +146,7 @@ const featurePopup = async (f: api.Feature, state: api.State, render: () => void
 					dom.div(dom._class('explain'), 'Use camelCase identifiers (a-zA-Z0-9 only, for use in JS), dot-separated (by topic). Example: dkim.ed25519.sign'),
 				),
 				dom.label(dom.div('Title *'), title=dom.input(attr.required(''), attr.value(f.Title))),
-				dom.label(dom.div('URL'), url=dom.input(attr.value(f.URL))),
+				dom.label(dom.div('Website URL'), url=dom.input(attr.value(f.URL))),
 				dom.label(dom.div('Description'), description=dom.textarea(f.Description)),
 				dom.br(),
 				dom.div(dom._class('explain'), 'Indicate for which kind of software this feature is applicable. Filtering by these fields applies to both features and software. It helps keep the displayed matrix understandable. ', dom.clickbutton('Check all', function click() {
@@ -269,7 +269,7 @@ const softwarePopup = async (s: api.Software, state: api.State, render: () => vo
 					),
 				),
 				dom.label(dom.div('Name *'), name=dom.input(attr.required(''), attr.value(s.Name))),
-				dom.label(dom.div('URL'), url=dom.input(attr.value(s.URL))),
+				dom.label(dom.div('Website URL'), url=dom.input(attr.value(s.URL))),
 				dom.label(dom.div('Description'), description=dom.textarea(s.Description)),
 				dom.label(openSource=dom.input(attr.type('checkbox'), s.OpenSource ? attr.checked('') : []), ' Open Source'),
 				dom.label(dom.div('License'), license=dom.input(attr.value(s.License))),
@@ -416,6 +416,7 @@ const init = async () => {
 	let filterMobile: HTMLInputElement
 	let filterWeb: HTMLInputElement
 	let filterTerminal: HTMLInputElement
+	let filterOpenSource: HTMLInputElement
 	let detailsFeatures: HTMLInputElement
 	let detailsSoftware: HTMLInputElement
 
@@ -514,6 +515,7 @@ const init = async () => {
 		checkbox(filterMobile, 'mobile')
 		checkbox(filterWeb, 'web')
 		checkbox(filterTerminal, 'terminal')
+		checkbox(filterOpenSource, 'opensource')
 		checkbox(detailsFeatures, 'detailfeats')
 		checkbox(detailsSoftware, 'detailsoftware')
 		let s = qs.toString()
@@ -539,6 +541,7 @@ console.log('qs', qs)
 		filterMobile.checked = qs.has('mobile')
 		filterWeb.checked = qs.has('web')
 		filterTerminal.checked = qs.has('terminal')
+		filterOpenSource.checked = qs.has('opensource')
 		detailsFeatures.checked = qs.has('detailfeats')
 		detailsSoftware.checked = qs.has('detailsoftware')
 	}
@@ -581,7 +584,7 @@ console.log('qs', qs)
 				softIDs.add(id)
 			}
 		}
-		const software = (state.Software || []).filter(s => checkFilters(s) && (!softIDs || softIDs.has(s.ID)))
+		const software = (state.Software || []).filter(s => checkFilters(s) && (!filterOpenSource.checked || s.OpenSource) && (!softIDs || softIDs.has(s.ID)))
 		const featregex = featureMatch.value ? new RegExp(featureMatch.value) : undefined
 		const features = (state.Features || []).filter(f => checkFilters(f) && (!featregex || featregex.test(f.ID)) && matchTextFeature(f))
 		software.sort((a: api.Software, b: api.Software) => a.ID < b.ID ? -1 : 1)
@@ -647,34 +650,39 @@ console.log('qs', qs)
 					)
 				),
 			),
-			detailsSoftware.checked ? dom.tr(
+			dom.tr(
 				dom.td(),
 				detailsFeatures.checked ? dom.td() : [],
 				software.map(s => dom.td(
 					style({maxWidth: '20em', fontSize: '.8em'}),
-					dom.div('ID: ' + s.ID),
-					s.Description ? dom.div(s.Description) : [],
-					s.URL ? dom.div(dom.a(attr.href(s.URL), attr.rel('noopener noreferrer'), s.URL)) : [],
-					s.OpenSource ? dom.div('Open source') : [],
-					s.License ? dom.div('License: ' + s.License) : [],
-					s.ProgLang ? dom.div('Programming language(s): ' + s.ProgLang) : [],
-					dom.div('Kind: ', Object.entries({Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal}).filter(t => t[1]).map(t => t[0]).join(', ')),
+					detailsSoftware.checked ? dom.div('ID: ' + s.ID) : [],
+					s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
+					detailsSoftware.checked ? [
+						s.Description ? dom.div(s.Description) : [],
+						s.OpenSource ? dom.div('Open source') : [],
+						s.License ? dom.div('License: ' + s.License) : [],
+						s.ProgLang ? dom.div('Programming language(s): ' + s.ProgLang) : [],
+						dom.div('Kind: ', Object.entries({Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal}).filter(t => t[1]).map(t => t[0]).join(', ')),
+					] : [],
 				)),
-			) : [],
+			),
 			features.map(f =>
 				dom.tr(
 					detailsFeatures.checked ? dom.td(
 						style({maxWidth: '20em', fontSize: '.8em'}),
 						featureIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID),
 						f.Description ? dom.div(f.Description) : [],
-						f.URL ? dom.div(dom.a(attr.href(f.URL), attr.rel('noopener noreferrer'), f.URL)) : [],
 					) : [],
 					dom.td(
 						dom._class('feature'),
 						function click() {
 							featurePopup(f, state, render)
 						},
-						dom.span(featureIDs.checked ? f.ID : f.Title, attr.title((featureIDs.checked ? f.Title : f.ID)+ (f.Description ? ': '+f.Description : ''))),
+						dom.span(
+							featureIDs.checked ? f.ID : f.Title,
+							attr.title((featureIDs.checked ? f.Title : f.ID)+ (f.Description ? ': '+f.Description : '')),
+						),
+						f.URL ? [' ', dom.a(style({fontSize: '.8em'}), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
 					),
 					software.map(s =>
 						makeStatus(s, f)
@@ -700,6 +708,7 @@ console.log('qs', qs)
 				dom.label(filterMobile=dom.input(attr.type('checkbox'), function change() { changed() }), ' Mobile'), ' ',
 				dom.label(filterWeb=dom.input(attr.type('checkbox'), function change() { changed() }), ' Web'), ' ',
 				dom.label(filterTerminal=dom.input(attr.type('checkbox'), function change() { changed() }), ' Terminal'), ' ',
+				dom.label(filterOpenSource=dom.input(attr.type('checkbox'), function change() { changed() }), ' Open Source'), ' ',
 				featureMatch=dom.input(attr.placeholder('Regexp on feature IDs...'), function change() { changed() }), ' ',
 				softwareIDs=dom.input(attr.placeholder('Software IDs, comma-separate...'), function change() { changed() }), ' ',
 				'Show details: ',
@@ -710,12 +719,12 @@ console.log('qs', qs)
 						style({maxWidth: '50em'}),
 						dom.h1('Implementations'),
 						dom.p("This page allows tracking software and their features. Features can be protocols and standards, or behaviours. Software exists in various forms: servers vs clients, libraries vs applications, desktop vs mobile vs web vs terminal."),
-						dom.p("The goals is keep an overview of software that implements (or does not implement) certain protocols/standards. This is useful for developers when they want to test for interoperability. It may also proof useful in the future to coordinate moving the ecosystem forward."),
+						dom.p("The goals is keep an overview of software that implements (or does not implement) certain protocols/standards. This is useful for developers when they want to test for interoperability. It may also prove useful in the future to coordinate moving the ecosystem forward."),
 						dom.p("Use the filters to drill down to the relevant software and/or features. Hit return in a text field after changing it to apply the updated filters."),
 						dom.p("Anyone can make changes. Please stick to the suggested naming schemes, or the database will become a mess. Information does not have to be complete, don't skip making changes because you don't have (time to gather more) complete information. Time will tell how this information is used and how complete it should be."),
 						dom.p('Making a good ontology of "features" is a difficult task. Different users have different needs. It may be good to differentiate between standards/protocols and optional/required behaviours, and between behaviours that applications choose on their own.'),
 						dom.p('Add/remove/edit features and software. Click on a cell in the matrix/table to change the implementation status of a feature for the software. Use the "paint status" function to quickly set many statuses. Keyboard keys 1 and onwards select a status. Escape cancels.'),
-						dom.p('The data is licensed under ', dom.a(attr.href('https://creativecommons.org/publicdomain/zero/1.0/'), attr.rel('noopener norefererer'), 'CC0'), ', i.e. public domain. The ', dom.a(attr.href('https://github.com/mjl-/implementations'), attr.rel('noopener norefererer'), 'code'), ' is licensed under MIT license.'),
+						dom.p('The data is licensed under ', dom.a(attr.href('https://creativecommons.org/publicdomain/zero/1.0/'), attr.rel('noopener'), 'CC0'), ', i.e. public domain. The ', dom.a(attr.href('https://github.com/modern-email/implementations'), attr.rel('noopener'), 'code'), ' is licensed under MIT license. Download current database as ', dom.a(attr.href('implementations.json'), 'implementations.json'), ' for use outside this tool, or as ', dom.a(attr.href('implementations.db'), 'implementations.db'), ' for use with a local version of this tool.'),
 					)
 				}), ' ',
 				dom.label(featureIDs=dom.input(attr.type('checkbox'), localStorageGet('featureids') ? attr.checked('') : [], function change() { changed() }), ' Feature IDs, not titles', attr.title('Show IDs of features in the first column, instead of titles. Can be easier when editing and finding the correct IDs to use.')), ' ',

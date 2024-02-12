@@ -163,6 +163,30 @@ func main() {
 	xcheckf(err, "making api handler")
 	http.Handle("/api/", apiHandler)
 
+	http.HandleFunc("/implementations.json", func(w http.ResponseWriter, r *http.Request) {
+		state, err := API{}.State(r.Context())
+		if err != nil {
+			log.Printf("state: %v", err)
+			http.Error(w, "500 - internal server error - "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if err := json.NewEncoder(w).Encode(state); err != nil {
+			log.Printf("writing json: %v", err)
+		}
+	})
+
+	http.HandleFunc("/implementations.db", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		err := database.Read(r.Context(), func(tx *bstore.Tx) error {
+			_, err := tx.WriteTo(w)
+			return err
+		})
+		if err != nil {
+			log.Printf("writing db: %v", err)
+		}
+	})
+
 	log.Printf("listening on %s", listenAddr)
 	log.Fatalln(http.ListenAndServe(listenAddr, nil))
 }
