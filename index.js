@@ -1131,7 +1131,7 @@ const init = async () => {
 		const features = (state.Features || []).filter(f => checkFilters(f) && (!featregex || featregex.test(f.ID)) && matchTextFeature(f));
 		software.sort((a, b) => a.ID < b.ID ? -1 : 1);
 		features.sort((a, b) => a.ID < b.ID ? -1 : 1);
-		const ntable = dom.table(dom.tr(dom.td(style({ verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold' }), 'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
+		const ntable = dom.table(dom.thead(style({ position: 'sticky', top: '0', backgroundColor: 'white' }), dom.tr(dom.td(style({ verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold' }), 'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
 			const nf = {
 				ID: '',
 				Created: new Date(),
@@ -1173,7 +1173,7 @@ const init = async () => {
 			softwarePopup(ns, state, render);
 		})), detailsFeatures.checked ? dom.td() : [], software.map(s => dom.td(dom._class('software'), dom._class('rotate'), function click() {
 			softwarePopup(s, state, render);
-		}, dom.div(dom.span(s.Name, attr.title(s.ID + (s.Description ? ': ' + s.Description : ''))))))), dom.tr(dom.td(), detailsFeatures.checked ? dom.td() : [], software.map(s => dom.td(style({ maxWidth: '20em', fontSize: '.8em' }), detailsSoftware.checked ? dom.div('ID: ' + s.ID) : [], s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [], detailsSoftware.checked ? [
+		}, dom.div(dom.span(s.Name, attr.title(s.ID + (s.Description ? ': ' + s.Description : '')))))))), dom.tbody(dom.tr(dom.td(), detailsFeatures.checked ? dom.td() : [], software.map(s => dom.td(style({ maxWidth: '20em', fontSize: '.8em' }), detailsSoftware.checked ? dom.div('ID: ' + s.ID) : [], s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [], detailsSoftware.checked ? [
 			s.Description ? dom.div(s.Description) : [],
 			s.OpenSource ? dom.div('Open source') : [],
 			s.License ? dom.div('License: ' + s.License) : [],
@@ -1181,7 +1181,7 @@ const init = async () => {
 			dom.div('Kind: ', Object.entries({ Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal }).filter(t => t[1]).map(t => t[0]).join(', ')),
 		] : []))), features.map(f => dom.tr(detailsFeatures.checked ? dom.td(style({ maxWidth: '20em', fontSize: '.8em' }), featureIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID), f.Description ? dom.div(f.Description) : []) : [], dom.td(dom._class('feature'), function click() {
 			featurePopup(f, state, render);
-		}, dom.span(featureIDs.checked ? f.ID : f.Title, attr.title((featureIDs.checked ? f.Title : f.ID) + (f.Description ? ': ' + f.Description : ''))), f.URL ? [' ', dom.a(style({ fontSize: '.8em' }), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : []), software.map(s => makeStatus(s, f)))));
+		}, dom.span(featureIDs.checked ? f.ID : f.Title, attr.title((featureIDs.checked ? f.Title : f.ID) + (f.Description ? ': ' + f.Description : ''))), f.URL ? [' ', dom.a(style({ fontSize: '.8em' }), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : []), software.map(s => makeStatus(s, f))))));
 		table.replaceWith(ntable);
 		table = ntable;
 	};

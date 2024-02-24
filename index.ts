@@ -590,102 +590,107 @@ console.log('qs', qs)
 		software.sort((a: api.Software, b: api.Software) => a.ID < b.ID ? -1 : 1)
 		features.sort((a: api.Feature, b: api.Feature) => a.ID < b.ID ? -1 : 1)
 		const ntable = dom.table(
-			dom.tr(
-				dom.td(
-					style({verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold'}),
-					'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
-						const nf: api.Feature = {
-							ID: '',
-							Created: new Date(),
-							Updated: new Date(),
-							Title: '',
-							URL: '',
-							Description: '',
-							Server: false,
-							Service: false,
-							Library: false,
-							Client: false,
-							Desktop: false,
-							Web: false,
-							Terminal: false,
-							Mobile: false,
-						}
-						featurePopup(nf, state, render)
-					}),
-					' \\ Software ', dom.clickbutton('+', attr.title('Add software'), function click() {
-						const ns: api.Software = {
-							ID: '',
-							Created: new Date(),
-							Updated: new Date(),
-							Name: '',
-							URL: '',
-							Description: '',
-							OpenSource: false,
-							License: '',
-							ProgLang: '',
-							Distribution: false,
-							Server: false,
-							Service: false,
-							Library: false,
-							Client: false,
-							Desktop: false,
-							Web: false,
-							Terminal: false,
-							Mobile: false,
-						}
-						softwarePopup(ns, state, render)
-					}),
-				),
-				detailsFeatures.checked ? dom.td() : [],
-				software.map(s =>
-					dom.td(
-						dom._class('software'),
-						dom._class('rotate'),
-						function click() {
-							softwarePopup(s, state, render)
-						},
-						dom.div(
-							dom.span(s.Name, attr.title(s.ID + (s.Description ? ': ' + s.Description : ''))),
-						)
-					)
-				),
-			),
-			dom.tr(
-				dom.td(),
-				detailsFeatures.checked ? dom.td() : [],
-				software.map(s => dom.td(
-					style({maxWidth: '20em', fontSize: '.8em'}),
-					detailsSoftware.checked ? dom.div('ID: ' + s.ID) : [],
-					s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
-					detailsSoftware.checked ? [
-						s.Description ? dom.div(s.Description) : [],
-						s.OpenSource ? dom.div('Open source') : [],
-						s.License ? dom.div('License: ' + s.License) : [],
-						s.ProgLang ? dom.div('Programming language(s): ' + s.ProgLang) : [],
-						dom.div('Kind: ', Object.entries({Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal}).filter(t => t[1]).map(t => t[0]).join(', ')),
-					] : [],
-				)),
-			),
-			features.map(f =>
+			dom.thead(
+				style({position: 'sticky', top: '0', backgroundColor: 'white'}),
 				dom.tr(
-					detailsFeatures.checked ? dom.td(
-						style({maxWidth: '20em', fontSize: '.8em'}),
-						featureIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID),
-						f.Description ? dom.div(f.Description) : [],
-					) : [],
 					dom.td(
-						dom._class('feature'),
-						function click() {
-							featurePopup(f, state, render)
-						},
-						dom.span(
-							featureIDs.checked ? f.ID : f.Title,
-							attr.title((featureIDs.checked ? f.Title : f.ID)+ (f.Description ? ': '+f.Description : '')),
-						),
-						f.URL ? [' ', dom.a(style({fontSize: '.8em'}), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
+						style({verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold'}),
+						'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
+							const nf: api.Feature = {
+								ID: '',
+								Created: new Date(),
+								Updated: new Date(),
+								Title: '',
+								URL: '',
+								Description: '',
+								Server: false,
+								Service: false,
+								Library: false,
+								Client: false,
+								Desktop: false,
+								Web: false,
+								Terminal: false,
+								Mobile: false,
+							}
+							featurePopup(nf, state, render)
+						}),
+						' \\ Software ', dom.clickbutton('+', attr.title('Add software'), function click() {
+							const ns: api.Software = {
+								ID: '',
+								Created: new Date(),
+								Updated: new Date(),
+								Name: '',
+								URL: '',
+								Description: '',
+								OpenSource: false,
+								License: '',
+								ProgLang: '',
+								Distribution: false,
+								Server: false,
+								Service: false,
+								Library: false,
+								Client: false,
+								Desktop: false,
+								Web: false,
+								Terminal: false,
+								Mobile: false,
+							}
+							softwarePopup(ns, state, render)
+						}),
 					),
+					detailsFeatures.checked ? dom.td() : [],
 					software.map(s =>
-						makeStatus(s, f)
+						dom.td(
+							dom._class('software'),
+							dom._class('rotate'),
+							function click() {
+								softwarePopup(s, state, render)
+							},
+							dom.div(
+								dom.span(s.Name, attr.title(s.ID + (s.Description ? ': ' + s.Description : ''))),
+							)
+						)
+					),
+				),
+			),
+			dom.tbody(
+				dom.tr(
+					dom.td(),
+					detailsFeatures.checked ? dom.td() : [],
+					software.map(s => dom.td(
+						style({maxWidth: '20em', fontSize: '.8em'}),
+						detailsSoftware.checked ? dom.div('ID: ' + s.ID) : [],
+						s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
+						detailsSoftware.checked ? [
+							s.Description ? dom.div(s.Description) : [],
+							s.OpenSource ? dom.div('Open source') : [],
+							s.License ? dom.div('License: ' + s.License) : [],
+							s.ProgLang ? dom.div('Programming language(s): ' + s.ProgLang) : [],
+							dom.div('Kind: ', Object.entries({Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal}).filter(t => t[1]).map(t => t[0]).join(', ')),
+						] : [],
+					)),
+				),
+				features.map(f =>
+					dom.tr(
+						detailsFeatures.checked ? dom.td(
+							style({maxWidth: '20em', fontSize: '.8em'}),
+							featureIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID),
+							f.Description ? dom.div(f.Description) : [],
+						) : [],
+						dom.td(
+							dom._class('feature'),
+							function click() {
+								featurePopup(f, state, render)
+							},
+							dom.span(
+								featureIDs.checked ? f.ID : f.Title,
+								attr.title((featureIDs.checked ? f.Title : f.ID)+ (f.Description ? ': '+f.Description : '')),
+							),
+							f.URL ? [' ', dom.a(style({fontSize: '.8em'}), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
+						),
+						software.map(s =>
+							makeStatus(s, f)
+						),
 					),
 				),
 			),
