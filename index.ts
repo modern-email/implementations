@@ -655,7 +655,9 @@ console.log('qs', qs)
 			),
 			dom.tbody(
 				dom.tr(
-					dom.td(),
+					dom.td(
+						dom.label(featureIDs=dom.input(attr.type('checkbox'), localStorageGet('featureids') ? attr.checked('') : [], function change() { changed() }), ' Feature IDs, not titles', attr.title('Show IDs of features in the first column, instead of titles. Can be easier when editing and finding the correct IDs to use.')),
+					),
 					detailsFeatures.checked ? dom.td() : [],
 					software.map(s => dom.td(
 						style({maxWidth: '20em', fontSize: '.8em'}),
@@ -732,7 +734,6 @@ console.log('qs', qs)
 						dom.p('The data is licensed under ', dom.a(attr.href('https://creativecommons.org/publicdomain/zero/1.0/'), attr.rel('noopener'), 'CC0'), ', i.e. public domain. The ', dom.a(attr.href('https://github.com/modern-email/implementations'), attr.rel('noopener'), 'code'), ' is licensed under MIT license. Download current database as ', dom.a(attr.href('implementations.json'), 'implementations.json'), ' for use outside this tool, or as ', dom.a(attr.href('implementations.db'), 'implementations.db'), ' for use with a local version of this tool.'),
 					)
 				}), ' ',
-				dom.label(featureIDs=dom.input(attr.type('checkbox'), localStorageGet('featureids') ? attr.checked('') : [], function change() { changed() }), ' Feature IDs, not titles', attr.title('Show IDs of features in the first column, instead of titles. Can be easier when editing and finding the correct IDs to use.')), ' ',
 				paint=dom.select(
 					style({position: 'fixed', right: '1em'}),
 					attr.title('Select a status to switch to a mode where every click in the matrix saves the status. A quick way to make many changes. Use keyboard shortcuts from 1 onwards to enable a status, and Escape to disable.'),
