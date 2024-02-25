@@ -13,9 +13,12 @@ import (
 
 	_ "embed"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/mjl-/bstore"
 	"github.com/mjl-/sherpa"
 	"github.com/mjl-/sherpadoc"
+	"github.com/mjl-/sherpaprom"
 )
 
 type Software struct {
@@ -122,8 +125,9 @@ func xcheckf(err error, format string, args ...any) {
 
 func main() {
 	log.SetFlags(0)
-	var listenAddr string
-	flag.StringVar(&listenAddr, "listenaddr", "localhost:8019", "address to listen on")
+	var listenAddr, metricsAddr string
+	flag.StringVar(&listenAddr, "listenaddr", "localhost:8019", "address to serve public http on")
+	flag.StringVar(&metricsAddr, "metricsaddr", "localhost:8020", "address to serve metrics on")
 	flag.Usage = func() {
 		log.Println("usage: implementations [flags]")
 		flag.PrintDefaults()
@@ -157,8 +161,10 @@ func main() {
 	})
 
 	apiDoc := mustParseAPI("api", apiJSON)
-	version := "dev"                                              // xxx
-	sherpaOpts := sherpa.HandlerOpts{AdjustFunctionNames: "none"} // todo: collector?
+
+	collector, err := sherpaprom.NewCollector("implementations", nil)
+	xcheckf(err, "creating sherpa prometheus collector")
+	sherpaOpts := sherpa.HandlerOpts{Collector: collector, AdjustFunctionNames: "none"}
 	apiHandler, err := sherpa.NewHandler("/api/", version, API{}, &apiDoc, &sherpaOpts)
 	xcheckf(err, "making api handler")
 	http.Handle("/api/", apiHandler)
@@ -187,8 +193,19 @@ func main() {
 		}
 	})
 
-	log.Printf("listening on %s", listenAddr)
-	log.Fatalln(http.ListenAndServe(listenAddr, nil))
+	// Prometheus metrics served on a separate port.
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+
+	if metricsAddr != "" {
+		log.Printf("listening on %s for metrics", metricsAddr)
+		go func() {
+			log.Fatalln("serving metrics", http.ListenAndServe(metricsAddr, metricsMux))
+		}()
+	}
+
+	log.Printf("listening on %s for public http, version %v", listenAddr, version)
+	log.Fatalln("serving public http", http.ListenAndServe(listenAddr, nil))
 }
 
 type API struct{}
