@@ -5,8 +5,16 @@ const errmsg = (err: unknown) => ''+((err as any).message || '(no error message)
 let popupOpen = false
 const popup = (...kids: ElemArg[]) => {
 	const origFocus = document.activeElement
-	const close = () => {
+	const close = (discard = false) => {
 		if (!root.parentNode) {
+			return
+		}
+		if (discard && Array.prototype.some.call(content.querySelectorAll('input, textarea'), (e: HTMLInputElement | HTMLTextAreaElement) => {
+			if (e instanceof HTMLTextAreaElement || e.type === 'text') {
+				return e.value !== e.defaultValue
+			}
+			return e.checked !== e.defaultChecked
+		}) && !window.confirm('Close & discard edits?')) {
 			return
 		}
 		popupOpen = false
@@ -21,12 +29,12 @@ const popup = (...kids: ElemArg[]) => {
 		function keydown(e: KeyboardEvent) {
 			if (e.key === 'Escape') {
 				e.stopPropagation()
-				close()
+				close(true)
 			}
 		},
 		function click(e: MouseEvent) {
 			e.stopPropagation()
-			close()
+			close(true)
 		},
 		content=dom.div(
 			attr.tabindex('0'),
