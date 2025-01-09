@@ -726,7 +726,7 @@ console.log('qs', qs)
 						style({maxWidth: '50em'}),
 						dom.h1('Implementations'),
 						dom.p("This page allows tracking software and their features. Features can be protocols and standards, or behaviours. Software exists in various forms: servers vs clients, libraries vs applications, desktop vs mobile vs web vs terminal."),
-						dom.p("The goals is keep an overview of software that implements (or does not implement) certain protocols/standards. This is useful for developers when they want to test for interoperability. It may also prove useful in the future to coordinate moving the ecosystem forward."),
+						dom.p("The goal is keep an overview of software that implements (or does not implement) certain protocols/standards. This is useful for developers when they want to test for interoperability. It may also prove useful in the future to coordinate moving the ecosystem forward."),
 						dom.p("Use the filters to drill down to the relevant software and/or features. Hit return in a text field after changing it to apply the updated filters."),
 						dom.p("Anyone can make changes. Please stick to the suggested naming schemes, or the database will become a mess. Information does not have to be complete, don't skip making changes because you don't have (time to gather more) complete information. Time will tell how this information is used and how complete it should be."),
 						dom.p('Making a good ontology of "features" is a difficult task. Different users have different needs. It may be good to differentiate between standards/protocols and optional/required behaviours, and between behaviours that applications choose on their own.'),
