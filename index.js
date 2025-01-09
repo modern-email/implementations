@@ -714,14 +714,21 @@ const popup = (...kids) => {
 		}
 	};
 	let content;
+	let mousedownTarget;
 	const root = dom.div(style({ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }), function keydown(e) {
 		if (e.key === 'Escape') {
 			e.stopPropagation();
 			close(true);
 		}
+	}, function mousedown(e) {
+		if (e.target) {
+			mousedownTarget = e.target;
+		}
 	}, function click(e) {
 		e.stopPropagation();
-		close(true);
+		if (e.target === mousedownTarget) {
+			close(true);
+		}
 	}, content = dom.div(attr.tabindex('0'), style({ backgroundColor: 'white', borderRadius: '.25em', padding: '1em', boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)', border: '1px solid #ddd', maxWidth: '95vw', overflowX: 'auto', maxHeight: '95vh', overflowY: 'auto' }), function click(e) {
 		e.stopPropagation();
 	}, kids));
