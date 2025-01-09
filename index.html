@@ -32,8 +32,8 @@ td.no { background-color: #ff9595; }
 td.never { background-color: #ff95e0; }
 td.na { color: #888; }
 td.unknown { color: #888; }
-tr:nth-child(even) td { background-color: #f8f8f8; }
-tr:hover td { background-color: #eff; }
+tr:nth-child(even), tr:nth-child(even) td:first-child { background-color: #f8f8f8; }
+tr:hover, tr:hover td:first-child { background-color: #eff; }
 
 /* based on https://css-tricks.com/rotated-table-column-headers/ */
 .rotate { padding: 0; height: 100px; white-space: nowrap; }
