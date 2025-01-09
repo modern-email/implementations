@@ -17,7 +17,7 @@ const popup = (...kids: ElemArg[]) => {
 	}
 	let content: HTMLElement
 	const root = dom.div(
-		style({position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1}),
+		style({position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2}),
 		function keydown(e: KeyboardEvent) {
 			if (e.key === 'Escape') {
 				e.stopPropagation()
@@ -591,7 +591,7 @@ console.log('qs', qs)
 		features.sort((a: api.Feature, b: api.Feature) => a.ID < b.ID ? -1 : 1)
 		const ntable = dom.table(
 			dom.thead(
-				style({position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '2'}),
+				style({position: 'sticky', top: '0', backgroundColor: 'white', zIndex: 2}),
 				dom.tr(
 					dom.td(
 						style({verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold'}),
