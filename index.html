@@ -9,6 +9,7 @@
 h1, h2 { margin-bottom: 1ex; }
 h1 { font-size: 1.1rem; }
 table td, table th { padding: .15em .25em; }
+table td:first-child { position: sticky; left: 0; z-index: 1; background-color: white; }
 [title] { text-decoration: underline; text-decoration-style: dotted; }
 fieldset label { display: block; }
 fieldset label, fieldset button { margin: .5ex 0; }
@@ -31,8 +32,8 @@ td.no { background-color: #ff9595; }
 td.never { background-color: #ff95e0; }
 td.na { color: #888; }
 td.unknown { color: #888; }
-tr:nth-child(even) { background-color: #f8f8f8; }
-tr:hover { background-color: #eff; }
+tr:nth-child(even) td { background-color: #f8f8f8; }
+tr:hover td { background-color: #eff; }
 
 /* based on https://css-tricks.com/rotated-table-column-headers/ */
 .rotate { padding: 0; height: 100px; white-space: nowrap; }

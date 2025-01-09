@@ -591,7 +591,7 @@ console.log('qs', qs)
 		features.sort((a: api.Feature, b: api.Feature) => a.ID < b.ID ? -1 : 1)
 		const ntable = dom.table(
 			dom.thead(
-				style({position: 'sticky', top: '0', backgroundColor: 'white'}),
+				style({position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '2'}),
 				dom.tr(
 					dom.td(
 						style({verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold'}),

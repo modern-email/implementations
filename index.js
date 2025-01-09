@@ -1131,7 +1131,7 @@ const init = async () => {
 		const features = (state.Features || []).filter(f => checkFilters(f) && (!featregex || featregex.test(f.ID)) && matchTextFeature(f));
 		software.sort((a, b) => a.ID < b.ID ? -1 : 1);
 		features.sort((a, b) => a.ID < b.ID ? -1 : 1);
-		const ntable = dom.table(dom.thead(style({ position: 'sticky', top: '0', backgroundColor: 'white' }), dom.tr(dom.td(style({ verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold' }), 'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
+		const ntable = dom.table(dom.thead(style({ position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '2' }), dom.tr(dom.td(style({ verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold' }), 'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
 			const nf = {
 				ID: '',
 				Created: new Date(),
