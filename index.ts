@@ -493,7 +493,7 @@ const init = async () => {
 	let detailsFeatures: HTMLInputElement
 	let detailsSoftware: HTMLInputElement
 
-	let featureIDs: HTMLInputElement
+	let showIDs: HTMLInputElement
 	let paint: HTMLSelectElement
 
 	const makeStatus = (s: api.Software, f: api.Feature) => {
@@ -598,7 +598,7 @@ const init = async () => {
 		}
 		window.location.hash = s
 
-		localStorageSet('featureids', featureIDs.checked)
+		localStorageSet('showids', showIDs.checked)
 	}
 
 	const loadFromHash = () => {
@@ -669,50 +669,56 @@ console.log('qs', qs)
 				style({position: 'sticky', top: '0', backgroundColor: 'white', zIndex: 2}),
 				dom.tr(
 					dom.td(
-						style({verticalAlign: 'bottom', textAlign: 'right', fontWeight: 'bold'}),
-						'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
-							const nf: api.Feature = {
-								ID: '',
-								Created: new Date(),
-								Updated: new Date(),
-								Title: '',
-								URL: '',
-								Description: '',
-								Server: false,
-								Service: false,
-								Library: false,
-								Client: false,
-								Desktop: false,
-								Web: false,
-								Terminal: false,
-								Mobile: false,
-							}
-							featurePopup(nf, state, render)
-						}),
-						' \\ Software ', dom.clickbutton('+', attr.title('Add software'), function click() {
-							const ns: api.Software = {
-								ID: '',
-								Created: new Date(),
-								Updated: new Date(),
-								Name: '',
-								URL: '',
-								Description: '',
-								OpenSource: false,
-								Maintained: true,
-								License: '',
-								ProgLang: '',
-								Distribution: false,
-								Server: false,
-								Service: false,
-								Library: false,
-								Client: false,
-								Desktop: false,
-								Web: false,
-								Terminal: false,
-								Mobile: false,
-							}
-							softwarePopup(ns, state, render)
-						}),
+						style({verticalAlign: 'bottom'}),
+						dom.div(
+							dom.label(showIDs=dom.input(attr.type('checkbox'), localStorageGet('showids') ? attr.checked('') : [], function change() { changed() }), ' IDs instead of titles', attr.title('Show IDs of features and software in the first column/row, instead of titles/names. Can be easier when editing and finding the correct IDs to use.')),
+						),
+						dom.div(
+							style({textAlign: 'right', fontWeight: 'bold', marginTop: '1ex'}),
+							'Features ', dom.clickbutton('+', attr.title('Add feature'), function click() {
+								const nf: api.Feature = {
+									ID: '',
+									Created: new Date(),
+									Updated: new Date(),
+									Title: '',
+									URL: '',
+									Description: '',
+									Server: false,
+									Service: false,
+									Library: false,
+									Client: false,
+									Desktop: false,
+									Web: false,
+									Terminal: false,
+									Mobile: false,
+								}
+								featurePopup(nf, state, render)
+							}),
+							' \\ Software ', dom.clickbutton('+', attr.title('Add software'), function click() {
+								const ns: api.Software = {
+									ID: '',
+									Created: new Date(),
+									Updated: new Date(),
+									Name: '',
+									URL: '',
+									Description: '',
+									OpenSource: false,
+									Maintained: true,
+									License: '',
+									ProgLang: '',
+									Distribution: false,
+									Server: false,
+									Service: false,
+									Library: false,
+									Client: false,
+									Desktop: false,
+									Web: false,
+									Terminal: false,
+									Mobile: false,
+								}
+								softwarePopup(ns, state, render)
+							}),
+						),
 					),
 					detailsFeatures.checked ? dom.td() : [],
 					software.map(s =>
@@ -723,7 +729,7 @@ console.log('qs', qs)
 								softwarePopup(s, state, render)
 							},
 							dom.div(
-								dom.span(s.Name, attr.title(softwareSummary(s))),
+								dom.span(showIDs.checked ? s.ID : s.Name, attr.title(softwareSummary(s))),
 							)
 						)
 					),
@@ -732,7 +738,6 @@ console.log('qs', qs)
 			dom.tbody(
 				dom.tr(
 					dom.td(
-						dom.label(featureIDs=dom.input(attr.type('checkbox'), localStorageGet('featureids') ? attr.checked('') : [], function change() { changed() }), ' Feature IDs, not titles', attr.title('Show IDs of features in the first column, instead of titles. Can be easier when editing and finding the correct IDs to use.')),
 					),
 					detailsFeatures.checked ? dom.td() : [],
 					software.map(s => dom.td(
@@ -753,7 +758,7 @@ console.log('qs', qs)
 					dom.tr(
 						detailsFeatures.checked ? dom.td(
 							style({maxWidth: '20em', fontSize: '.8em'}),
-							featureIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID),
+							showIDs.checked ? dom.div(f.Title) : dom.div('ID: ' + f.ID),
 							f.Description ? dom.div(f.Description) : [],
 						) : [],
 						dom.td(
@@ -762,7 +767,7 @@ console.log('qs', qs)
 								featurePopup(f, state, render)
 							},
 							dom.span(
-								featureIDs.checked ? f.ID : f.Title,
+								showIDs.checked ? f.ID : f.Title,
 								attr.title(featureSummary(f)),
 							),
 							f.URL ? [' ', dom.a(style({fontSize: '.8em'}), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
