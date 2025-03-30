@@ -414,6 +414,59 @@ const isRelevant = (s: api.Software, f: api.Feature) => {
 	return false
 }
 
+const softwareSummary = (s: api.Software) => {
+	const kinds: string[] = []
+	const check = (v: boolean, s: string) => {
+		if (v) {
+			kinds.push(s)
+		}
+	}
+	check(s.Server, 'Server')
+	check(s.Service, 'Service')
+	check(s.Library, 'Library')
+	check(s.Client, 'Client')
+	check(s.Desktop, 'Desktop')
+	check(s.Mobile, 'Mobile')
+	check(s.Web, 'Web')
+	check(s.Terminal, 'Terminal')
+
+	return [
+		['ID', s.ID],
+		['Name', s.Name],
+		['Maintained', s.Maintained ? 'Yes' : 'No'],
+		['License', s.OpenSource ? 'Open Source' : 'Proprietary' + (s.License ? ': '+s.License : '')],
+		['Language(s)', s.ProgLang],
+		['Kind', kinds.join(', ')],
+		['URL', s.URL],
+		['Description', s.Description],
+	].filter(t => t[1]).map(t => t[0] + ': ' + t[1]).join('\n')
+}
+
+const featureSummary = (f: api.Feature) => {
+	const kinds: string[] = []
+	const check = (v: boolean, s: string) => {
+		if (v) {
+			kinds.push(s)
+		}
+	}
+	check(f.Server, 'Server')
+	check(f.Service, 'Service')
+	check(f.Library, 'Library')
+	check(f.Client, 'Client')
+	check(f.Desktop, 'Desktop')
+	check(f.Mobile, 'Mobile')
+	check(f.Web, 'Web')
+	check(f.Terminal, 'Terminal')
+
+	return [
+		['ID', f.ID],
+		['Title', f.Title],
+		['Kind', kinds.join(', ')],
+		['URL', f.URL],
+		['Description', f.Description],
+	].filter(t => t[1]).map(t => t[0] + ': ' + t[1]).join('\n')
+}
+
 const init = async () => {
 	const state = await client.State()
 	const implementations = new Map<string, api.Implementation>()
@@ -670,7 +723,7 @@ console.log('qs', qs)
 								softwarePopup(s, state, render)
 							},
 							dom.div(
-								dom.span(s.Name, attr.title(s.ID + (s.Description ? ': ' + s.Description : ''))),
+								dom.span(s.Name, attr.title(softwareSummary(s))),
 							)
 						)
 					),
@@ -710,7 +763,7 @@ console.log('qs', qs)
 							},
 							dom.span(
 								featureIDs.checked ? f.ID : f.Title,
-								attr.title((featureIDs.checked ? f.Title : f.ID)+ (f.Description ? ': '+f.Description : '')),
+								attr.title(featureSummary(f)),
 							),
 							f.URL ? [' ', dom.a(style({fontSize: '.8em'}), attr.href(f.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
 						),
