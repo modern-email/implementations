@@ -19,9 +19,9 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
-	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e // indirect
-	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
+	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/tools v0.31.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )

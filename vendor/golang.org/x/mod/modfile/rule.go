@@ -5,17 +5,17 @@
 // Package modfile implements a parser and formatter for go.mod files.
 //
 // The go.mod syntax is described in
-// https://golang.org/cmd/go/#hdr-The_go_mod_file.
+// https://pkg.go.dev/cmd/go/#hdr-The_go_mod_file.
 //
-// The Parse and ParseLax functions both parse a go.mod file and return an
+// The [Parse] and [ParseLax] functions both parse a go.mod file and return an
 // abstract syntax tree. ParseLax ignores unknown statements and may be used to
 // parse go.mod files that may have been developed with newer versions of Go.
 //
-// The File struct returned by Parse and ParseLax represent an abstract
-// go.mod file. File has several methods like AddNewRequire and DropReplace
-// that can be used to programmatically edit a file.
+// The [File] struct returned by Parse and ParseLax represent an abstract
+// go.mod file. File has several methods like [File.AddNewRequire] and
+// [File.DropReplace] that can be used to programmatically edit a file.
 //
-// The Format function formats a File back to a byte slice which can be
+// The [Format] function formats a File back to a byte slice which can be
 // written to a file.
 package modfile
 
@@ -35,12 +35,15 @@ import (
 
 // A File is the parsed, interpreted form of a go.mod file.
 type File struct {
-	Module  *Module
-	Go      *Go
-	Require []*Require
-	Exclude []*Exclude
-	Replace []*Replace
-	Retract []*Retract
+	Module    *Module
+	Go        *Go
+	Toolchain *Toolchain
+	Godebug   []*Godebug
+	Require   []*Require
+	Exclude   []*Exclude
+	Replace   []*Replace
+	Retract   []*Retract
+	Tool      []*Tool
 
 	Syntax *FileSyntax
 }
@@ -56,6 +59,19 @@ type Module struct {
 type Go struct {
 	Version string // "1.23"
 	Syntax  *Line
+}
+
+// A Toolchain is the toolchain statement.
+type Toolchain struct {
+	Name   string // "go1.21rc1"
+	Syntax *Line
+}
+
+// A Godebug is a single godebug key=value statement.
+type Godebug struct {
+	Key    string
+	Value  string
+	Syntax *Line
 }
 
 // An Exclude is a single exclude statement.
@@ -76,6 +92,12 @@ type Retract struct {
 	VersionInterval
 	Rationale string
 	Syntax    *Line
+}
+
+// A Tool is a single tool statement.
+type Tool struct {
+	Path   string
+	Syntax *Line
 }
 
 // A VersionInterval represents a range of versions with upper and lower bounds.
@@ -219,7 +241,7 @@ var dontFixRetract VersionFixer = func(_, vers string) (string, error) {
 // data is the content of the file.
 //
 // fix is an optional function that canonicalizes module versions.
-// If fix is nil, all module versions must be canonical (module.CanonicalVersion
+// If fix is nil, all module versions must be canonical ([module.CanonicalVersion]
 // must return the same string).
 func Parse(file string, data []byte, fix VersionFixer) (*File, error) {
 	return parseToFile(file, data, fix, true)
@@ -282,7 +304,7 @@ func parseToFile(file string, data []byte, fix VersionFixer, strict bool) (parse
 					})
 				}
 				continue
-			case "module", "require", "exclude", "replace", "retract":
+			case "module", "godebug", "require", "exclude", "replace", "retract", "tool":
 				for _, l := range x.Line {
 					f.add(&errs, x, l, x.Token[0], l.Token, fix, strict)
 				}
@@ -296,8 +318,15 @@ func parseToFile(file string, data []byte, fix VersionFixer, strict bool) (parse
 	return f, nil
 }
 
-var GoVersionRE = lazyregexp.New(`^([1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+var GoVersionRE = lazyregexp.New(`^([1-9][0-9]*)\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?([a-z]+[0-9]+)?$`)
 var laxGoVersionRE = lazyregexp.New(`^v?(([1-9][0-9]*)\.(0|[1-9][0-9]*))([^0-9].*)$`)
+
+// Toolchains must be named beginning with `go1`,
+// like "go1.20.3" or "go1.20.3-gccgo". As a special case, "default" is also permitted.
+// Note that this regexp is a much looser condition than go/version.IsValid,
+// for forward compatibility.
+// (This code has to be work to identify new toolchains even if we tweak the syntax in the future.)
+var ToolchainRE = lazyregexp.New(`^default$|^go1($|\.)`)
 
 func (f *File) add(errs *ErrorList, block *LineBlock, line *Line, verb string, args []string, fix VersionFixer, strict bool) {
 	// If strict is false, this module is a dependency.
@@ -356,13 +385,28 @@ func (f *File) add(errs *ErrorList, block *LineBlock, line *Line, verb string, a
 				}
 			}
 			if !fixed {
-				errorf("invalid go version '%s': must match format 1.23", args[0])
+				errorf("invalid go version '%s': must match format 1.23.0", args[0])
 				return
 			}
 		}
 
 		f.Go = &Go{Syntax: line}
 		f.Go.Version = args[0]
+
+	case "toolchain":
+		if f.Toolchain != nil {
+			errorf("repeated toolchain statement")
+			return
+		}
+		if len(args) != 1 {
+			errorf("toolchain directive expects exactly one argument")
+			return
+		} else if !ToolchainRE.MatchString(args[0]) {
+			errorf("invalid toolchain version '%s': must match format go1.23.0 or default", args[0])
+			return
+		}
+		f.Toolchain = &Toolchain{Syntax: line}
+		f.Toolchain.Name = args[0]
 
 	case "module":
 		if f.Module != nil {
@@ -384,6 +428,22 @@ func (f *File) add(errs *ErrorList, block *LineBlock, line *Line, verb string, a
 			return
 		}
 		f.Module.Mod = module.Version{Path: s}
+
+	case "godebug":
+		if len(args) != 1 || strings.ContainsAny(args[0], "\"`',") {
+			errorf("usage: godebug key=value")
+			return
+		}
+		key, value, ok := strings.Cut(args[0], "=")
+		if !ok {
+			errorf("usage: godebug key=value")
+			return
+		}
+		f.Godebug = append(f.Godebug, &Godebug{
+			Key:    key,
+			Value:  value,
+			Syntax: line,
+		})
 
 	case "require", "exclude":
 		if len(args) != 2 {
@@ -423,68 +483,12 @@ func (f *File) add(errs *ErrorList, block *LineBlock, line *Line, verb string, a
 		}
 
 	case "replace":
-		arrow := 2
-		if len(args) >= 2 && args[1] == "=>" {
-			arrow = 1
-		}
-		if len(args) < arrow+2 || len(args) > arrow+3 || args[arrow] != "=>" {
-			errorf("usage: %s module/path [v1.2.3] => other/module v1.4\n\t or %s module/path [v1.2.3] => ../local/directory", verb, verb)
+		replace, wrappederr := parseReplace(f.Syntax.Name, line, verb, args, fix)
+		if wrappederr != nil {
+			*errs = append(*errs, *wrappederr)
 			return
 		}
-		s, err := parseString(&args[0])
-		if err != nil {
-			errorf("invalid quoted string: %v", err)
-			return
-		}
-		pathMajor, err := modulePathMajor(s)
-		if err != nil {
-			wrapModPathError(s, err)
-			return
-		}
-		var v string
-		if arrow == 2 {
-			v, err = parseVersion(verb, s, &args[1], fix)
-			if err != nil {
-				wrapError(err)
-				return
-			}
-			if err := module.CheckPathMajor(v, pathMajor); err != nil {
-				wrapModPathError(s, err)
-				return
-			}
-		}
-		ns, err := parseString(&args[arrow+1])
-		if err != nil {
-			errorf("invalid quoted string: %v", err)
-			return
-		}
-		nv := ""
-		if len(args) == arrow+2 {
-			if !IsDirectoryPath(ns) {
-				errorf("replacement module without version must be directory path (rooted or starting with ./ or ../)")
-				return
-			}
-			if filepath.Separator == '/' && strings.Contains(ns, `\`) {
-				errorf("replacement directory appears to be Windows path (on a non-windows system)")
-				return
-			}
-		}
-		if len(args) == arrow+3 {
-			nv, err = parseVersion(verb, ns, &args[arrow+2], fix)
-			if err != nil {
-				wrapError(err)
-				return
-			}
-			if IsDirectoryPath(ns) {
-				errorf("replacement module directory path %q cannot have version", ns)
-				return
-			}
-		}
-		f.Replace = append(f.Replace, &Replace{
-			Old:    module.Version{Path: s, Version: v},
-			New:    module.Version{Path: ns, Version: nv},
-			Syntax: line,
-		})
+		f.Replace = append(f.Replace, replace)
 
 	case "retract":
 		rationale := parseDirectiveComment(block, line)
@@ -512,7 +516,101 @@ func (f *File) add(errs *ErrorList, block *LineBlock, line *Line, verb string, a
 			Syntax:          line,
 		}
 		f.Retract = append(f.Retract, retract)
+
+	case "tool":
+		if len(args) != 1 {
+			errorf("tool directive expects exactly one argument")
+			return
+		}
+		s, err := parseString(&args[0])
+		if err != nil {
+			errorf("invalid quoted string: %v", err)
+			return
+		}
+		f.Tool = append(f.Tool, &Tool{
+			Path:   s,
+			Syntax: line,
+		})
 	}
+}
+
+func parseReplace(filename string, line *Line, verb string, args []string, fix VersionFixer) (*Replace, *Error) {
+	wrapModPathError := func(modPath string, err error) *Error {
+		return &Error{
+			Filename: filename,
+			Pos:      line.Start,
+			ModPath:  modPath,
+			Verb:     verb,
+			Err:      err,
+		}
+	}
+	wrapError := func(err error) *Error {
+		return &Error{
+			Filename: filename,
+			Pos:      line.Start,
+			Err:      err,
+		}
+	}
+	errorf := func(format string, args ...interface{}) *Error {
+		return wrapError(fmt.Errorf(format, args...))
+	}
+
+	arrow := 2
+	if len(args) >= 2 && args[1] == "=>" {
+		arrow = 1
+	}
+	if len(args) < arrow+2 || len(args) > arrow+3 || args[arrow] != "=>" {
+		return nil, errorf("usage: %s module/path [v1.2.3] => other/module v1.4\n\t or %s module/path [v1.2.3] => ../local/directory", verb, verb)
+	}
+	s, err := parseString(&args[0])
+	if err != nil {
+		return nil, errorf("invalid quoted string: %v", err)
+	}
+	pathMajor, err := modulePathMajor(s)
+	if err != nil {
+		return nil, wrapModPathError(s, err)
+
+	}
+	var v string
+	if arrow == 2 {
+		v, err = parseVersion(verb, s, &args[1], fix)
+		if err != nil {
+			return nil, wrapError(err)
+		}
+		if err := module.CheckPathMajor(v, pathMajor); err != nil {
+			return nil, wrapModPathError(s, err)
+		}
+	}
+	ns, err := parseString(&args[arrow+1])
+	if err != nil {
+		return nil, errorf("invalid quoted string: %v", err)
+	}
+	nv := ""
+	if len(args) == arrow+2 {
+		if !IsDirectoryPath(ns) {
+			if strings.Contains(ns, "@") {
+				return nil, errorf("replacement module must match format 'path version', not 'path@version'")
+			}
+			return nil, errorf("replacement module without version must be directory path (rooted or starting with . or ..)")
+		}
+		if filepath.Separator == '/' && strings.Contains(ns, `\`) {
+			return nil, errorf("replacement directory appears to be Windows path (on a non-windows system)")
+		}
+	}
+	if len(args) == arrow+3 {
+		nv, err = parseVersion(verb, ns, &args[arrow+2], fix)
+		if err != nil {
+			return nil, wrapError(err)
+		}
+		if IsDirectoryPath(ns) {
+			return nil, errorf("replacement module directory path %q cannot have version", ns)
+		}
+	}
+	return &Replace{
+		Old:    module.Version{Path: s, Version: v},
+		New:    module.Version{Path: ns, Version: nv},
+		Syntax: line,
+	}, nil
 }
 
 // fixRetract applies fix to each retract directive in f, appending any errors
@@ -556,14 +654,104 @@ func (f *File) fixRetract(fix VersionFixer, errs *ErrorList) {
 	}
 }
 
-// IsDirectoryPath reports whether the given path should be interpreted
-// as a directory path. Just like on the go command line, relative paths
+func (f *WorkFile) add(errs *ErrorList, line *Line, verb string, args []string, fix VersionFixer) {
+	wrapError := func(err error) {
+		*errs = append(*errs, Error{
+			Filename: f.Syntax.Name,
+			Pos:      line.Start,
+			Err:      err,
+		})
+	}
+	errorf := func(format string, args ...interface{}) {
+		wrapError(fmt.Errorf(format, args...))
+	}
+
+	switch verb {
+	default:
+		errorf("unknown directive: %s", verb)
+
+	case "go":
+		if f.Go != nil {
+			errorf("repeated go statement")
+			return
+		}
+		if len(args) != 1 {
+			errorf("go directive expects exactly one argument")
+			return
+		} else if !GoVersionRE.MatchString(args[0]) {
+			errorf("invalid go version '%s': must match format 1.23.0", args[0])
+			return
+		}
+
+		f.Go = &Go{Syntax: line}
+		f.Go.Version = args[0]
+
+	case "toolchain":
+		if f.Toolchain != nil {
+			errorf("repeated toolchain statement")
+			return
+		}
+		if len(args) != 1 {
+			errorf("toolchain directive expects exactly one argument")
+			return
+		} else if !ToolchainRE.MatchString(args[0]) {
+			errorf("invalid toolchain version '%s': must match format go1.23.0 or default", args[0])
+			return
+		}
+
+		f.Toolchain = &Toolchain{Syntax: line}
+		f.Toolchain.Name = args[0]
+
+	case "godebug":
+		if len(args) != 1 || strings.ContainsAny(args[0], "\"`',") {
+			errorf("usage: godebug key=value")
+			return
+		}
+		key, value, ok := strings.Cut(args[0], "=")
+		if !ok {
+			errorf("usage: godebug key=value")
+			return
+		}
+		f.Godebug = append(f.Godebug, &Godebug{
+			Key:    key,
+			Value:  value,
+			Syntax: line,
+		})
+
+	case "use":
+		if len(args) != 1 {
+			errorf("usage: %s local/dir", verb)
+			return
+		}
+		s, err := parseString(&args[0])
+		if err != nil {
+			errorf("invalid quoted string: %v", err)
+			return
+		}
+		f.Use = append(f.Use, &Use{
+			Path:   s,
+			Syntax: line,
+		})
+
+	case "replace":
+		replace, wrappederr := parseReplace(f.Syntax.Name, line, verb, args, fix)
+		if wrappederr != nil {
+			*errs = append(*errs, *wrappederr)
+			return
+		}
+		f.Replace = append(f.Replace, replace)
+	}
+}
+
+// IsDirectoryPath reports whether the given path should be interpreted as a directory path.
+// Just like on the go command line, relative paths starting with a '.' or '..' path component
 // and rooted paths are directory paths; the rest are module paths.
 func IsDirectoryPath(ns string) bool {
 	// Because go.mod files can move from one system to another,
 	// we check all known path syntaxes, both Unix and Windows.
-	return strings.HasPrefix(ns, "./") || strings.HasPrefix(ns, "../") || strings.HasPrefix(ns, "/") ||
-		strings.HasPrefix(ns, `.\`) || strings.HasPrefix(ns, `..\`) || strings.HasPrefix(ns, `\`) ||
+	return ns == "." || strings.HasPrefix(ns, "./") || strings.HasPrefix(ns, `.\`) ||
+		ns == ".." || strings.HasPrefix(ns, "../") || strings.HasPrefix(ns, `..\`) ||
+		strings.HasPrefix(ns, "/") || strings.HasPrefix(ns, `\`) ||
 		len(ns) >= 2 && ('A' <= ns[0] && ns[0] <= 'Z' || 'a' <= ns[0] && ns[0] <= 'z') && ns[1] == ':'
 }
 
@@ -800,11 +988,20 @@ func (f *File) Format() ([]byte, error) {
 }
 
 // Cleanup cleans up the file f after any edit operations.
-// To avoid quadratic behavior, modifications like DropRequire
+// To avoid quadratic behavior, modifications like [File.DropRequire]
 // clear the entry but do not remove it from the slice.
 // Cleanup cleans out all the cleared entries.
 func (f *File) Cleanup() {
 	w := 0
+	for _, g := range f.Godebug {
+		if g.Key != "" {
+			f.Godebug[w] = g
+			w++
+		}
+	}
+	f.Godebug = f.Godebug[:w]
+
+	w = 0
 	for _, r := range f.Require {
 		if r.Mod.Path != "" {
 			f.Require[w] = r
@@ -845,12 +1042,14 @@ func (f *File) Cleanup() {
 
 func (f *File) AddGoStmt(version string) error {
 	if !GoVersionRE.MatchString(version) {
-		return fmt.Errorf("invalid language version string %q", version)
+		return fmt.Errorf("invalid language version %q", version)
 	}
 	if f.Go == nil {
 		var hint Expr
 		if f.Module != nil && f.Module.Syntax != nil {
 			hint = f.Module.Syntax
+		} else if f.Syntax == nil {
+			f.Syntax = new(FileSyntax)
 		}
 		f.Go = &Go{
 			Version: version,
@@ -861,6 +1060,83 @@ func (f *File) AddGoStmt(version string) error {
 		f.Syntax.updateLine(f.Go.Syntax, "go", version)
 	}
 	return nil
+}
+
+// DropGoStmt deletes the go statement from the file.
+func (f *File) DropGoStmt() {
+	if f.Go != nil {
+		f.Go.Syntax.markRemoved()
+		f.Go = nil
+	}
+}
+
+// DropToolchainStmt deletes the toolchain statement from the file.
+func (f *File) DropToolchainStmt() {
+	if f.Toolchain != nil {
+		f.Toolchain.Syntax.markRemoved()
+		f.Toolchain = nil
+	}
+}
+
+func (f *File) AddToolchainStmt(name string) error {
+	if !ToolchainRE.MatchString(name) {
+		return fmt.Errorf("invalid toolchain name %q", name)
+	}
+	if f.Toolchain == nil {
+		var hint Expr
+		if f.Go != nil && f.Go.Syntax != nil {
+			hint = f.Go.Syntax
+		} else if f.Module != nil && f.Module.Syntax != nil {
+			hint = f.Module.Syntax
+		}
+		f.Toolchain = &Toolchain{
+			Name:   name,
+			Syntax: f.Syntax.addLine(hint, "toolchain", name),
+		}
+	} else {
+		f.Toolchain.Name = name
+		f.Syntax.updateLine(f.Toolchain.Syntax, "toolchain", name)
+	}
+	return nil
+}
+
+// AddGodebug sets the first godebug line for key to value,
+// preserving any existing comments for that line and removing all
+// other godebug lines for key.
+//
+// If no line currently exists for key, AddGodebug adds a new line
+// at the end of the last godebug block.
+func (f *File) AddGodebug(key, value string) error {
+	need := true
+	for _, g := range f.Godebug {
+		if g.Key == key {
+			if need {
+				g.Value = value
+				f.Syntax.updateLine(g.Syntax, "godebug", key+"="+value)
+				need = false
+			} else {
+				g.Syntax.markRemoved()
+				*g = Godebug{}
+			}
+		}
+	}
+
+	if need {
+		f.addNewGodebug(key, value)
+	}
+	return nil
+}
+
+// addNewGodebug adds a new godebug key=value line at the end
+// of the last godebug block, regardless of any existing godebug lines for key.
+func (f *File) addNewGodebug(key, value string) {
+	line := f.Syntax.addLine(nil, "godebug", key+"="+value)
+	g := &Godebug{
+		Key:    key,
+		Value:  value,
+		Syntax: line,
+	}
+	f.Godebug = append(f.Godebug, g)
 }
 
 // AddRequire sets the first require line for path to version vers,
@@ -914,8 +1190,8 @@ func (f *File) AddNewRequire(path, vers string, indirect bool) {
 // The requirements in req must specify at most one distinct version for each
 // module path.
 //
-// If any existing requirements may be removed, the caller should call Cleanup
-// after all edits are complete.
+// If any existing requirements may be removed, the caller should call
+// [File.Cleanup] after all edits are complete.
 func (f *File) SetRequire(req []*Require) {
 	type elem struct {
 		version  string
@@ -1170,6 +1446,16 @@ func (f *File) SetRequireSeparateIndirect(req []*Require) {
 	f.SortBlocks()
 }
 
+func (f *File) DropGodebug(key string) error {
+	for _, g := range f.Godebug {
+		if g.Key == key {
+			g.Syntax.markRemoved()
+			*g = Godebug{}
+		}
+	}
+	return nil
+}
+
 func (f *File) DropRequire(path string) error {
 	for _, r := range f.Require {
 		if r.Mod.Path == path {
@@ -1212,6 +1498,10 @@ func (f *File) DropExclude(path, vers string) error {
 }
 
 func (f *File) AddReplace(oldPath, oldVers, newPath, newVers string) error {
+	return addReplace(f.Syntax, &f.Replace, oldPath, oldVers, newPath, newVers)
+}
+
+func addReplace(syntax *FileSyntax, replace *[]*Replace, oldPath, oldVers, newPath, newVers string) error {
 	need := true
 	old := module.Version{Path: oldPath, Version: oldVers}
 	new := module.Version{Path: newPath, Version: newVers}
@@ -1225,12 +1515,12 @@ func (f *File) AddReplace(oldPath, oldVers, newPath, newVers string) error {
 	}
 
 	var hint *Line
-	for _, r := range f.Replace {
+	for _, r := range *replace {
 		if r.Old.Path == oldPath && (oldVers == "" || r.Old.Version == oldVers) {
 			if need {
 				// Found replacement for old; update to use new.
 				r.New = new
-				f.Syntax.updateLine(r.Syntax, tokens...)
+				syntax.updateLine(r.Syntax, tokens...)
 				need = false
 				continue
 			}
@@ -1243,7 +1533,7 @@ func (f *File) AddReplace(oldPath, oldVers, newPath, newVers string) error {
 		}
 	}
 	if need {
-		f.Replace = append(f.Replace, &Replace{Old: old, New: new, Syntax: f.Syntax.addLine(hint, tokens...)})
+		*replace = append(*replace, &Replace{Old: old, New: new, Syntax: syntax.addLine(hint, tokens...)})
 	}
 	return nil
 }
@@ -1299,8 +1589,44 @@ func (f *File) DropRetract(vi VersionInterval) error {
 	return nil
 }
 
+// AddTool adds a new tool directive with the given path.
+// It does nothing if the tool line already exists.
+func (f *File) AddTool(path string) error {
+	for _, t := range f.Tool {
+		if t.Path == path {
+			return nil
+		}
+	}
+
+	f.Tool = append(f.Tool, &Tool{
+		Path:   path,
+		Syntax: f.Syntax.addLine(nil, "tool", path),
+	})
+
+	f.SortBlocks()
+	return nil
+}
+
+// RemoveTool removes a tool directive with the given path.
+// It does nothing if no such tool directive exists.
+func (f *File) DropTool(path string) error {
+	for _, t := range f.Tool {
+		if t.Path == path {
+			t.Syntax.markRemoved()
+			*t = Tool{}
+		}
+	}
+	return nil
+}
+
 func (f *File) SortBlocks() {
 	f.removeDups() // otherwise sorting is unsafe
+
+	// semanticSortForExcludeVersionV is the Go version (plus leading "v") at which
+	// lines in exclude blocks start to use semantic sort instead of lexicographic sort.
+	// See go.dev/issue/60028.
+	const semanticSortForExcludeVersionV = "v1.21"
+	useSemanticSortForExclude := f.Go != nil && semver.Compare("v"+f.Go.Version, semanticSortForExcludeVersionV) >= 0
 
 	for _, stmt := range f.Syntax.Stmt {
 		block, ok := stmt.(*LineBlock)
@@ -1308,7 +1634,9 @@ func (f *File) SortBlocks() {
 			continue
 		}
 		less := lineLess
-		if block.Token[0] == "retract" {
+		if block.Token[0] == "exclude" && useSemanticSortForExclude {
+			less = lineExcludeLess
+		} else if block.Token[0] == "retract" {
 			less = lineRetractLess
 		}
 		sort.SliceStable(block.Line, func(i, j int) bool {
@@ -1317,9 +1645,9 @@ func (f *File) SortBlocks() {
 	}
 }
 
-// removeDups removes duplicate exclude and replace directives.
+// removeDups removes duplicate exclude, replace and tool directives.
 //
-// Earlier exclude directives take priority.
+// Earlier exclude and tool directives take priority.
 //
 // Later replace directives take priority.
 //
@@ -1329,30 +1657,36 @@ func (f *File) SortBlocks() {
 // retract directives are not de-duplicated since comments are
 // meaningful, and versions may be retracted multiple times.
 func (f *File) removeDups() {
+	removeDups(f.Syntax, &f.Exclude, &f.Replace, &f.Tool)
+}
+
+func removeDups(syntax *FileSyntax, exclude *[]*Exclude, replace *[]*Replace, tool *[]*Tool) {
 	kill := make(map[*Line]bool)
 
 	// Remove duplicate excludes.
-	haveExclude := make(map[module.Version]bool)
-	for _, x := range f.Exclude {
-		if haveExclude[x.Mod] {
-			kill[x.Syntax] = true
-			continue
+	if exclude != nil {
+		haveExclude := make(map[module.Version]bool)
+		for _, x := range *exclude {
+			if haveExclude[x.Mod] {
+				kill[x.Syntax] = true
+				continue
+			}
+			haveExclude[x.Mod] = true
 		}
-		haveExclude[x.Mod] = true
-	}
-	var excl []*Exclude
-	for _, x := range f.Exclude {
-		if !kill[x.Syntax] {
-			excl = append(excl, x)
+		var excl []*Exclude
+		for _, x := range *exclude {
+			if !kill[x.Syntax] {
+				excl = append(excl, x)
+			}
 		}
+		*exclude = excl
 	}
-	f.Exclude = excl
 
 	// Remove duplicate replacements.
 	// Later replacements take priority over earlier ones.
 	haveReplace := make(map[module.Version]bool)
-	for i := len(f.Replace) - 1; i >= 0; i-- {
-		x := f.Replace[i]
+	for i := len(*replace) - 1; i >= 0; i-- {
+		x := (*replace)[i]
 		if haveReplace[x.Old] {
 			kill[x.Syntax] = true
 			continue
@@ -1360,18 +1694,36 @@ func (f *File) removeDups() {
 		haveReplace[x.Old] = true
 	}
 	var repl []*Replace
-	for _, x := range f.Replace {
+	for _, x := range *replace {
 		if !kill[x.Syntax] {
 			repl = append(repl, x)
 		}
 	}
-	f.Replace = repl
+	*replace = repl
+
+	if tool != nil {
+		haveTool := make(map[string]bool)
+		for _, t := range *tool {
+			if haveTool[t.Path] {
+				kill[t.Syntax] = true
+				continue
+			}
+			haveTool[t.Path] = true
+		}
+		var newTool []*Tool
+		for _, t := range *tool {
+			if !kill[t.Syntax] {
+				newTool = append(newTool, t)
+			}
+		}
+		*tool = newTool
+	}
 
 	// Duplicate require and retract directives are not removed.
 
 	// Drop killed statements from the syntax tree.
 	var stmts []Expr
-	for _, stmt := range f.Syntax.Stmt {
+	for _, stmt := range syntax.Stmt {
 		switch stmt := stmt.(type) {
 		case *Line:
 			if kill[stmt] {
@@ -1391,7 +1743,7 @@ func (f *File) removeDups() {
 		}
 		stmts = append(stmts, stmt)
 	}
-	f.Syntax.Stmt = stmts
+	syntax.Stmt = stmts
 }
 
 // lineLess returns whether li should be sorted before lj. It sorts
@@ -1403,6 +1755,22 @@ func lineLess(li, lj *Line) bool {
 		}
 	}
 	return len(li.Token) < len(lj.Token)
+}
+
+// lineExcludeLess reports whether li should be sorted before lj for lines in
+// an "exclude" block.
+func lineExcludeLess(li, lj *Line) bool {
+	if len(li.Token) != 2 || len(lj.Token) != 2 {
+		// Not a known exclude specification.
+		// Fall back to sorting lexicographically.
+		return lineLess(li, lj)
+	}
+	// An exclude specification has two tokens: ModulePath and Version.
+	// Compare module path by string order and version by semver rules.
+	if pi, pj := li.Token[0], lj.Token[0]; pi != pj {
+		return pi < pj
+	}
+	return semver.Compare(li.Token[1], lj.Token[1]) < 0
 }
 
 // lineRetractLess returns whether li should be sorted before lj for lines in
