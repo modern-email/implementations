@@ -259,6 +259,13 @@
 					]
 				},
 				{
+					"Name": "Maintained",
+					"Docs": "",
+					"Typewords": [
+						"bool"
+					]
+				},
+				{
 					"Name": "License",
 					"Docs": "",
 					"Typewords": [

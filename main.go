@@ -29,6 +29,7 @@ type Software struct {
 	URL          string
 	Description  string
 	OpenSource   bool
+	Maintained   bool
 	License      string
 	ProgLang     string
 	Distribution bool // Collection of other software packages.

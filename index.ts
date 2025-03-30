@@ -196,6 +196,7 @@ const softwarePopup = async (s: api.Software, state: api.State, render: () => vo
 	let url: HTMLInputElement
 	let description: HTMLTextAreaElement
 	let openSource: HTMLInputElement
+	let maintained: HTMLInputElement
 	let license: HTMLInputElement
 	let progLang: HTMLInputElement
 	let distribution: HTMLInputElement
@@ -245,6 +246,7 @@ const softwarePopup = async (s: api.Software, state: api.State, render: () => vo
 						URL: url.value,
 						Description: description.value,
 						OpenSource: openSource.checked,
+						Maintained: maintained.checked,
 						License: license.value,
 						ProgLang: progLang.value,
 						Distribution: distribution.checked,
@@ -288,6 +290,7 @@ const softwarePopup = async (s: api.Software, state: api.State, render: () => vo
 				dom.label(dom.div('Website URL'), url=dom.input(attr.value(s.URL))),
 				dom.label(dom.div('Description'), description=dom.textarea(s.Description)),
 				dom.label(openSource=dom.input(attr.type('checkbox'), s.OpenSource ? attr.checked('') : []), ' Open Source'),
+				dom.label(maintained=dom.input(attr.type('checkbox'), s.Maintained ? attr.checked('') : []), ' Maintained', attr.title('Releases or changes have been made recently. For example in the past 2 years.')),
 				dom.label(dom.div('License'), license=dom.input(attr.value(s.License))),
 				dom.label(dom.div('Programming language(s)'), progLang=dom.input(attr.value(s.ProgLang))),
 				dom.label(distribution=dom.input(attr.type('checkbox'), s.Distribution ? attr.checked('') : []), ' Distribution (of other software packages)'),
@@ -433,6 +436,7 @@ const init = async () => {
 	let filterWeb: HTMLInputElement
 	let filterTerminal: HTMLInputElement
 	let filterOpenSource: HTMLInputElement
+	let filterUnmaintained: HTMLInputElement
 	let detailsFeatures: HTMLInputElement
 	let detailsSoftware: HTMLInputElement
 
@@ -532,6 +536,7 @@ const init = async () => {
 		checkbox(filterWeb, 'web')
 		checkbox(filterTerminal, 'terminal')
 		checkbox(filterOpenSource, 'opensource')
+		checkbox(filterUnmaintained, 'unmaintained')
 		checkbox(detailsFeatures, 'detailfeats')
 		checkbox(detailsSoftware, 'detailsoftware')
 		let s = qs.toString()
@@ -558,6 +563,7 @@ console.log('qs', qs)
 		filterWeb.checked = qs.has('web')
 		filterTerminal.checked = qs.has('terminal')
 		filterOpenSource.checked = qs.has('opensource')
+		filterUnmaintained.checked = qs.has('unmaintained')
 		detailsFeatures.checked = qs.has('detailfeats')
 		detailsSoftware.checked = qs.has('detailsoftware')
 	}
@@ -600,7 +606,7 @@ console.log('qs', qs)
 				softIDs.add(id)
 			}
 		}
-		const software = (state.Software || []).filter(s => checkFilters(s) && (!filterOpenSource.checked || s.OpenSource) && (!softIDs || softIDs.has(s.ID)))
+		const software = (state.Software || []).filter(s => checkFilters(s) && (!filterOpenSource.checked || s.OpenSource) && (filterUnmaintained.checked || s.Maintained) && (!softIDs || softIDs.has(s.ID)))
 		const featregex = featureMatch.value ? new RegExp(featureMatch.value) : undefined
 		const features = (state.Features || []).filter(f => checkFilters(f) && (!featregex || featregex.test(f.ID)) && matchTextFeature(f))
 		software.sort((a: api.Software, b: api.Software) => a.ID < b.ID ? -1 : 1)
@@ -639,6 +645,7 @@ console.log('qs', qs)
 								URL: '',
 								Description: '',
 								OpenSource: false,
+								Maintained: true,
 								License: '',
 								ProgLang: '',
 								Distribution: false,
@@ -681,7 +688,8 @@ console.log('qs', qs)
 						s.URL ? [' ', dom.a(attr.href(s.URL), attr.rel('noopener'), attr.title('Open website'), '🔗')] : [],
 						detailsSoftware.checked ? [
 							s.Description ? dom.div(s.Description) : [],
-							s.OpenSource ? dom.div('Open source') : [],
+							dom.div(s.OpenSource ? 'Open source' : 'Proprietary'),
+							dom.div(s.Maintained ? 'Maintained' : 'Unmaintained'),
 							s.License ? dom.div('License: ' + s.License) : [],
 							s.ProgLang ? dom.div('Programming language(s): ' + s.ProgLang) : [],
 							dom.div('Kind: ', Object.entries({Server: s.Server, Service: s.Service, Library: s.Library, Client: s.Client, Desktop: s.Desktop, Mobile: s.Mobile, Web: s.Web, Terminal: s.Terminal}).filter(t => t[1]).map(t => t[0]).join(', ')),
@@ -732,6 +740,7 @@ console.log('qs', qs)
 				dom.label(filterWeb=dom.input(attr.type('checkbox'), function change() { changed() }), ' Web'), ' ',
 				dom.label(filterTerminal=dom.input(attr.type('checkbox'), function change() { changed() }), ' Terminal'), ' ',
 				dom.label(filterOpenSource=dom.input(attr.type('checkbox'), function change() { changed() }), ' Open Source'), ' ',
+				dom.label(filterUnmaintained=dom.input(attr.type('checkbox'), function change() { changed() }), ' Show unmaintained', attr.title('By default, only maintained software is shown.')), ' ',
 				featureMatch=dom.input(attr.placeholder('Regexp on feature IDs...'), function change() { changed() }), ' ',
 				softwareIDs=dom.input(attr.placeholder('Software IDs, comma-separate...'), function change() { changed() }), ' ',
 				'Show details: ',
