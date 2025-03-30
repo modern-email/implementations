@@ -1,9 +1,9 @@
 module github.com/modern-email/implementations
 
-go 1.22.0
+go 1.23.0
 
 require (
-	github.com/mjl-/bstore v0.0.8
+	github.com/mjl-/bstore v0.0.9
 	github.com/mjl-/sherpa v0.6.7
 	github.com/mjl-/sherpadoc v0.0.12
 	github.com/mjl-/sherpaprom v0.0.2
